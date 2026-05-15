@@ -9,7 +9,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #050510; /* 深いダークブルー */
+            background-color: #050510;
             color: white;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             user-select: none;
@@ -19,16 +19,6 @@
             display: block;
             width: 100vw;
             height: 100vh;
-        }
-
-        /* ネオンエフェクト用のテキストスタイル */
-        .neon-text-p1 {
-            color: #00ffff;
-            text-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff, 0 0 20px #00ffff;
-        }
-        .neon-text-p2 {
-            color: #ff00ff;
-            text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         }
 
         /* グラスモーフィズムパネル */
@@ -45,6 +35,30 @@
             border-radius: 50%;
             box-shadow: 0 0 10px currentColor;
         }
+
+        kbd {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #fff;
+        }
+
+        /* キャラ選択ボタン */
+        .char-btn {
+            transition: all 0.2s ease;
+            opacity: 0.4;
+            transform: scale(0.95);
+        }
+        .char-btn:hover {
+            opacity: 0.8;
+        }
+        .char-btn.selected {
+            opacity: 1;
+            transform: scale(1.05);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -56,58 +70,78 @@
     <div id="ui-layer" class="absolute inset-0 pointer-events-none flex flex-col justify-between p-6 sm:p-10 z-10 hidden">
         <!-- 上部：ストック（残機）表示 -->
         <div class="flex justify-between w-full">
-            <div id="p1-stocks" class="flex gap-3 text-[#00ffff]">
-                <!-- JSで生成 -->
-            </div>
-            <div id="p2-stocks" class="flex gap-3 text-[#ff00ff]">
-                <!-- JSで生成 -->
-            </div>
+            <div id="p1-stocks" class="flex gap-3"></div>
+            <div id="p2-stocks" class="flex gap-3"></div>
         </div>
 
         <!-- 下部：ダメージ（％）表示 -->
         <div class="flex justify-between w-full items-end pb-4">
             <div class="flex flex-col items-start">
-                <span class="text-sm text-gray-400 font-bold mb-1">PLAYER 1</span>
-                <div class="text-6xl sm:text-8xl font-black neon-text-p1"><span id="p1-damage">0</span><span class="text-3xl sm:text-5xl">%</span></div>
+                <span id="p1-name-ui" class="text-sm font-bold mb-1">PLAYER 1</span>
+                <div id="p1-damage-container" class="text-6xl sm:text-8xl font-black transition-all duration-100">
+                    <span id="p1-damage">0</span><span class="text-3xl sm:text-5xl">%</span>
+                </div>
             </div>
             <div class="flex flex-col items-end">
-                <span class="text-sm text-gray-400 font-bold mb-1">PLAYER 2</span>
-                <div class="text-6xl sm:text-8xl font-black neon-text-p2"><span id="p2-damage">0</span><span class="text-3xl sm:text-5xl">%</span></div>
+                <span id="p2-name-ui" class="text-sm font-bold mb-1">PLAYER 2</span>
+                <div id="p2-damage-container" class="text-6xl sm:text-8xl font-black transition-all duration-100">
+                    <span id="p2-damage">0</span><span class="text-3xl sm:text-5xl">%</span>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- スタート画面 -->
-    <div id="start-screen" class="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50 transition-opacity duration-300">
-        <div class="glass-panel p-8 sm:p-12 rounded-2xl max-w-2xl w-full mx-4 text-center">
+    <div id="start-screen" class="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-50 transition-opacity duration-300 overflow-y-auto py-10">
+        <div class="glass-panel p-8 sm:p-12 rounded-2xl max-w-4xl w-full mx-4 text-center">
             <h1 class="text-5xl sm:text-7xl font-black mb-2 tracking-widest italic" style="color: #fff; text-shadow: 2px 2px 0 #00ffff, -2px -2px 0 #ff00ff;">NEON SMASH</h1>
-            <p class="text-gray-400 mb-8 tracking-widest text-sm">LOCAL MULTIPLAYER BRAWLER</p>
+            <p class="text-gray-400 mb-8 tracking-widest text-sm">CHARACTER SELECT & BATTLE</p>
             
-            <div class="flex flex-col sm:flex-row gap-6 mb-10 text-left">
-                <!-- 1P 操作 -->
-                <div class="flex-1 bg-white/5 p-4 rounded-xl border border-[#00ffff]/30">
-                    <h2 class="neon-text-p1 font-bold text-xl mb-4 text-center">PLAYER 1 (Cyan)</h2>
-                    <ul class="space-y-2 text-sm text-gray-300">
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">A</kbd> <kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">D</kbd> : 左右移動</li>
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">W</kbd> : ジャンプ (空中でもう1回可)</li>
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">S</kbd> : すり抜け床を降りる</li>
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">F</kbd> : 攻撃 (スマッシュ)</li>
+            <div class="flex flex-col md:flex-row gap-6 mb-10 text-left items-stretch">
+                <!-- 1P パネル -->
+                <div id="p1-panel" class="flex-1 bg-black/40 p-5 rounded-xl border-2 transition-colors duration-300">
+                    <h2 class="font-bold text-2xl mb-4 text-center text-white">PLAYER 1</h2>
+                    
+                    <!-- キャラ選択 -->
+                    <div class="flex gap-2 justify-center mb-4">
+                        <button class="char-btn p1-btn px-3 py-2 rounded border" data-char="ninja">NINJA</button>
+                        <button class="char-btn p1-btn px-3 py-2 rounded border" data-char="tank">TANK</button>
+                        <button class="char-btn p1-btn px-3 py-2 rounded border" data-char="hacker">HACKER</button>
+                    </div>
+                    
+                    <p id="p1-desc" class="text-center text-sm mb-4 h-10 font-bold"></p>
+
+                    <ul class="space-y-2 text-sm text-gray-300 bg-white/5 p-3 rounded">
+                        <li><kbd>A</kbd> <kbd>D</kbd> : 移動 / <kbd>W</kbd> : ジャンプ</li>
+                        <li><kbd>S</kbd> : すり抜け床を降りる</li>
+                        <li><kbd>F</kbd> : スマッシュ(攻撃)</li>
+                        <li><kbd>G</kbd> : 復帰スキル <span class="text-[10px] text-yellow-400 ml-1">*空中1回のみ</span></li>
                     </ul>
                 </div>
-                <!-- 2P 操作 -->
-                <div class="flex-1 bg-white/5 p-4 rounded-xl border border-[#ff00ff]/30">
-                    <h2 class="neon-text-p2 font-bold text-xl mb-4 text-center">PLAYER 2 (Magenta)</h2>
-                    <ul class="space-y-2 text-sm text-gray-300">
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">←</kbd> <kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">→</kbd> : 左右移動</li>
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">↑</kbd> : ジャンプ (空中でもう1回可)</li>
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">↓</kbd> : すり抜け床を降りる</li>
-                        <li><kbd class="bg-white/20 px-2 py-1 rounded text-white font-mono">L</kbd> : 攻撃 (スマッシュ)</li>
+
+                <!-- 2P パネル -->
+                <div id="p2-panel" class="flex-1 bg-black/40 p-5 rounded-xl border-2 transition-colors duration-300">
+                    <h2 class="font-bold text-2xl mb-4 text-center text-white">PLAYER 2</h2>
+                    
+                    <!-- キャラ選択 -->
+                    <div class="flex gap-2 justify-center mb-4">
+                        <button class="char-btn p2-btn px-3 py-2 rounded border" data-char="ninja">NINJA</button>
+                        <button class="char-btn p2-btn px-3 py-2 rounded border" data-char="tank">TANK</button>
+                        <button class="char-btn p2-btn px-3 py-2 rounded border" data-char="hacker">HACKER</button>
+                    </div>
+                    
+                    <p id="p2-desc" class="text-center text-sm mb-4 h-10 font-bold"></p>
+
+                    <ul class="space-y-2 text-sm text-gray-300 bg-white/5 p-3 rounded">
+                        <li><kbd>←</kbd> <kbd>→</kbd> : 移動 / <kbd>↑</kbd> : ジャンプ</li>
+                        <li><kbd>↓</kbd> : すり抜け床を降りる</li>
+                        <li><kbd>L</kbd> : スマッシュ(攻撃)</li>
+                        <li><kbd>K</kbd> : 復帰スキル <span class="text-[10px] text-yellow-400 ml-1">*空中1回のみ</span></li>
                     </ul>
                 </div>
             </div>
 
-            <p class="text-lg text-white mb-6">ダメージ(%)を溜めて、相手を画面外へ吹っ飛ばせ！</p>
-            <button id="start-btn" class="bg-white text-black font-bold text-xl px-10 py-3 rounded-full hover:scale-105 transition-transform hover:shadow-[0_0_20px_rgba(255,255,255,0.5)] cursor-pointer pointer-events-auto">
+            <button id="start-btn" class="bg-white text-black font-bold text-xl px-12 py-4 rounded-full hover:scale-105 transition-transform hover:shadow-[0_0_20px_rgba(255,255,255,0.8)] cursor-pointer pointer-events-auto">
                 BATTLE START
             </button>
         </div>
@@ -118,7 +152,7 @@
         <div class="text-center">
             <h1 id="winner-text" class="text-6xl sm:text-8xl font-black mb-8 tracking-widest italic uppercase"></h1>
             <button id="restart-btn" class="glass-panel text-white font-bold text-xl px-8 py-3 rounded-full hover:bg-white/20 transition-colors cursor-pointer pointer-events-auto">
-                PLAY AGAIN
+                BACK TO SELECT
             </button>
         </div>
     </div>
@@ -135,11 +169,15 @@
         const restartBtn = document.getElementById('restart-btn');
         const p1DamageEl = document.getElementById('p1-damage');
         const p2DamageEl = document.getElementById('p2-damage');
+        const p1DamageContainer = document.getElementById('p1-damage-container');
+        const p2DamageContainer = document.getElementById('p2-damage-container');
         const p1StocksEl = document.getElementById('p1-stocks');
         const p2StocksEl = document.getElementById('p2-stocks');
+        const p1NameUi = document.getElementById('p1-name-ui');
+        const p2NameUi = document.getElementById('p2-name-ui');
         const winnerText = document.getElementById('winner-text');
 
-        // キャンバスのサイズを画面に合わせる（固定アスペクト比 16:9 で計算用座標系を作る）
+        // --- キャンバス設定 ---
         const GAME_WIDTH = 1280;
         const GAME_HEIGHT = 720;
         let scale = 1;
@@ -147,71 +185,113 @@
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            // 画面に収まるようにスケールを計算
             scale = Math.min(canvas.width / GAME_WIDTH, canvas.height / GAME_HEIGHT);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // --- キーボード入力の管理 ---
+        // --- 入力管理 ---
         const keys = {};
-        const prevKeys = {}; // 前フレームのキー状態（押した瞬間を検知するため）
-
+        const prevKeys = {};
         window.addEventListener('keydown', e => {
             keys[e.code] = true;
-            // スクロール防止
-            if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
-                e.preventDefault();
-            }
+            if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) e.preventDefault();
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // --- キャラクター定義 ---
+        const CHARACTERS = {
+            ninja: {
+                id: 'ninja', name: 'NINJA', color: '#00ffff',
+                moveSpeed: 8, jumpForce: 13, maxJumps: 2, weight: 0.85,
+                attackDamage: 8, baseKnockback: 6, attackDuration: 12, attackCooldown: 20,
+                skillDesc: 'スキル: CYBER DASH\n斜め上へ高速突進！復帰力抜群。'
+            },
+            tank: {
+                id: 'tank', name: 'TANK', color: '#ff00ff',
+                moveSpeed: 4.5, jumpForce: 11, maxJumps: 2, weight: 1.4,
+                attackDamage: 16, baseKnockback: 9, attackDuration: 22, attackCooldown: 35,
+                skillDesc: 'スキル: UPPERCUT\n真上へ強烈な上昇！横移動は苦手。'
+            },
+            hacker: {
+                id: 'hacker', name: 'HACKER', color: '#ffff00',
+                moveSpeed: 6.5, jumpForce: 11, maxJumps: 3, weight: 1.0,
+                attackDamage: 10, baseKnockback: 7, attackDuration: 16, attackCooldown: 25,
+                skillDesc: 'スキル: HOVER FLY\n空中を漂いながら横に長距離復帰！(3段ジャンプ可)'
+            }
+        };
+
+        let selectedP1 = 'ninja';
+        let selectedP2 = 'tank';
+
+        // キャラ選択UIの初期化とイベント
+        function updateCharSelectUI() {
+            ['p1', 'p2'].forEach(player => {
+                const selectedChar = player === 'p1' ? selectedP1 : selectedP2;
+                const charData = CHARACTERS[selectedChar];
+                
+                document.querySelectorAll(`.${player}-btn`).forEach(btn => {
+                    if(btn.dataset.char === selectedChar) {
+                        btn.classList.add('selected');
+                        btn.style.borderColor = charData.color;
+                        btn.style.color = charData.color;
+                        btn.style.boxShadow = `0 0 10px ${charData.color}`;
+                    } else {
+                        btn.classList.remove('selected');
+                        btn.style.borderColor = '#444';
+                        btn.style.color = '#888';
+                        btn.style.boxShadow = 'none';
+                    }
+                });
+
+                document.getElementById(`${player}-panel`).style.borderColor = charData.color;
+                document.getElementById(`${player}-desc`).innerText = charData.skillDesc;
+                document.getElementById(`${player}-desc`).style.color = charData.color;
+            });
+        }
+
+        document.querySelectorAll('.p1-btn').forEach(btn => {
+            btn.addEventListener('click', e => { selectedP1 = e.target.dataset.char; updateCharSelectUI(); });
+        });
+        document.querySelectorAll('.p2-btn').forEach(btn => {
+            btn.addEventListener('click', e => { selectedP2 = e.target.dataset.char; updateCharSelectUI(); });
+        });
+        updateCharSelectUI();
 
         // --- ゲーム定数 ---
         const GRAVITY = 0.6;
         const MAX_FALL_SPEED = 15;
-        const MOVE_SPEED = 6;
-        const JUMP_FORCE = 13;
-        const FRICTION = 0.8; // 地上での滑りにくさ
-        const AIR_FRICTION = 0.95; // 空中での抵抗
+        const FRICTION = 0.8;
+        const AIR_FRICTION = 0.95;
 
-        const HITSTUN_MULTIPLIER = 1.5; // ダメージによる硬直時間の倍率
-        const KNOCKBACK_BASE = 5;       // 基礎吹っ飛び力
-        const KNOCKBACK_MULTIPLIER = 0.15; // ダメージ％による吹っ飛び増加量
+        // 吹っ飛び関連（マイルドに調整）
+        const HITSTUN_MULTIPLIER = 1.8;
+        const KNOCKBACK_MULTIPLIER = 0.08; // ダメージ1%につき8%吹っ飛び増加
 
-        // --- ステージ（足場） ---
+        // --- ステージ ---
         const platforms = [
-            // メインステージ (中央下)
             { x: 340, y: 550, width: 600, height: 40, type: 'solid' },
-            // 左プラットフォーム (すり抜け可能)
             { x: 200, y: 380, width: 250, height: 15, type: 'pass-through' },
-            // 右プラットフォーム (すり抜け可能)
             { x: 830, y: 380, width: 250, height: 15, type: 'pass-through' },
-            // 中央上プラットフォーム (すり抜け可能)
             { x: 540, y: 220, width: 200, height: 15, type: 'pass-through' }
         ];
 
-        // --- パーティクルシステム（ヒット時のエフェクト用） ---
+        // --- パーティクル ---
         let particles = [];
         class Particle {
             constructor(x, y, color, vx, vy, life) {
-                this.x = x;
-                this.y = y;
-                this.color = color;
-                this.vx = vx;
-                this.vy = vy;
-                this.life = life;
-                this.maxLife = life;
-                this.size = Math.random() * 5 + 2;
+                this.x = x; this.y = y; this.color = color;
+                this.vx = vx; this.vy = vy;
+                this.life = life; this.maxLife = life;
+                this.size = Math.random() * 5 + 3;
             }
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
+                this.x += this.vx; this.y += this.vy;
                 this.vy += GRAVITY * 0.5;
                 this.life--;
             }
             draw(ctx) {
-                const alpha = Math.max(0, this.life / this.maxLife);
-                ctx.globalAlpha = alpha;
+                ctx.globalAlpha = Math.max(0, this.life / this.maxLife);
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -219,108 +299,166 @@
                 ctx.globalAlpha = 1.0;
             }
         }
-
         function createExplosion(x, y, color, amount) {
             for (let i = 0; i < amount; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 10 + 5;
-                particles.push(new Particle(
-                    x, y, color, 
-                    Math.cos(angle) * speed, 
-                    Math.sin(angle) * speed, 
-                    Math.random() * 20 + 10
-                ));
+                particles.push(new Particle(x, y, color, Math.cos(angle)*speed, Math.sin(angle)*speed, Math.random()*20+10));
             }
         }
 
         // --- プレイヤークラス ---
         class Player {
-            constructor(id, x, y, color, controls) {
+            constructor(id, x, y, charId, controls) {
                 this.id = id;
-                // 基本プロパティ
-                this.x = x;
-                this.y = y;
+                this.charData = CHARACTERS[charId];
+                this.color = this.charData.color;
+                
                 this.width = 40;
                 this.height = 60;
-                this.color = color;
+                this.x = x;
+                this.y = y;
                 
-                // 物理
                 this.vx = 0;
                 this.vy = 0;
                 this.onGround = false;
-                this.facing = id === 1 ? 1 : -1; // 1:右, -1:左
+                this.facing = id === 1 ? 1 : -1;
                 
-                // ステータス
                 this.damage = 0;
                 this.stocks = 3;
-                this.maxJumps = 2;
                 this.jumpCount = 0;
                 
-                // 状態異常・アクションタイマー
-                this.hitstun = 0;      // ダメージを受けて操作不能なフレーム数
-                this.invincible = 0;   // 無敵フレーム（リスポーン時など）
-                this.isAttacking = false;
-                this.attackDuration = 15; // 攻撃の持続フレーム
-                this.attackTimer = 0;
-                this.attackCooldown = 0;  // 連続攻撃防止
+                this.hitstun = 0;
+                this.invincible = 0;
                 
-                // 入力マッピング
-                this.controls = controls;
+                this.isAttacking = false;
+                this.attackTimer = 0;
+                this.attackCooldown = 0;
 
-                // 描画用のトレース（軌跡）
+                // スキル関連
+                this.isSkilling = false;
+                this.skillTimer = 0;
+                this.skillUsedInAir = false; // 空中でスキルを使ったか（着地で回復）
+                
+                this.controls = controls;
                 this.trail = [];
             }
 
             respawn() {
                 this.x = this.id === 1 ? 400 : 880;
                 this.y = 100;
-                this.vx = 0;
-                this.vy = 0;
+                this.vx = 0; this.vy = 0;
                 this.damage = 0;
-                this.invincible = 120; // 2秒無敵 (60fps想定)
+                this.invincible = 120;
                 this.hitstun = 0;
                 this.jumpCount = 0;
-                
-                // UI更新
+                this.isSkilling = false;
+                this.skillUsedInAir = false;
                 updateUI();
             }
 
-            takeDamage(damage, knockbackX, knockbackY) {
+            takeDamage(damage, knockbackX, knockbackY, baseKnockback) {
                 this.damage += damage;
                 
-                // スマブラ風：ダメージが蓄積するほど吹っ飛びが大きくなる
+                // 吹っ飛び計算： (基礎値 * ダメージ倍率) / キャラの重さ
                 const multiplier = 1 + (this.damage * KNOCKBACK_MULTIPLIER);
+                const finalKnockback = (baseKnockback * multiplier) / this.charData.weight;
                 
-                this.vx = knockbackX * KNOCKBACK_BASE * multiplier;
-                this.vy = knockbackY * KNOCKBACK_BASE * multiplier;
+                this.vx = knockbackX * finalKnockback;
+                this.vy = knockbackY * finalKnockback;
                 
-                // 硬直時間の計算（吹っ飛び速度に比例）
+                // 硬直
                 this.hitstun = Math.floor(Math.sqrt(this.vx**2 + this.vy**2) * HITSTUN_MULTIPLIER);
                 
-                // エフェクト発生
-                createExplosion(this.x + this.width/2, this.y + this.height/2, this.color, Math.floor(multiplier * 5));
+                // ダメージエフェクト
+                createExplosion(this.x + this.width/2, this.y + this.height/2, this.color, Math.floor(multiplier * 4));
                 
                 updateUI();
+            }
+
+            useSkill() {
+                this.isSkilling = true;
+                if (!this.onGround) {
+                    this.skillUsedInAir = true; // 空中での使用権を消費
+                }
+                
+                createExplosion(this.x + this.width/2, this.y + this.height/2, '#fff', 10);
+
+                // キャラごとのスキル挙動設定
+                switch(this.charData.id) {
+                    case 'ninja':
+                        this.skillTimer = 15;
+                        this.vx = this.facing * 18; // 高速横移動
+                        this.vy = -12; // 上にも飛ぶ
+                        break;
+                    case 'tank':
+                        this.skillTimer = 20;
+                        this.vx = this.facing * 3; // 横にはあまり動けない
+                        this.vy = -20; // 超ジャンプ
+                        break;
+                    case 'hacker':
+                        this.skillTimer = 30;
+                        this.vy = -5; // 少し上へ
+                        this.vx = this.facing * 9; // ホバリング
+                        break;
+                }
             }
 
             update(otherPlayer) {
-                // 軌跡の保存
                 this.trail.push({x: this.x, y: this.y});
                 if (this.trail.length > 5) this.trail.shift();
 
-                // タイマーの更新
                 if (this.invincible > 0) this.invincible--;
                 if (this.attackCooldown > 0) this.attackCooldown--;
 
-                // --- 状態の判定 ---
+                // --- ヒットスタン（吹っ飛び中） ---
                 if (this.hitstun > 0) {
-                    // 操作不能（吹っ飛び中）
                     this.hitstun--;
-                    // 空中抵抗を少し減らしてよく飛ぶようにする
-                    this.vx *= 0.98;
+                    // 空気抵抗（少し強めに減速させる）
+                    this.vx *= 0.96;
+                    this.vy += GRAVITY;
+
+                    // DI (Directional Influence) : 吹っ飛び中のベクトル変更
+                    if (keys[this.controls.left]) this.vx -= 0.5;
+                    if (keys[this.controls.right]) this.vx += 0.5;
+
+                // --- スキル中 ---
+                } else if (this.isSkilling) {
+                    this.skillTimer--;
+                    this.invincible = 2; // スキル中は無敵（または相殺扱い）
+
+                    // スキルの攻撃判定（触れたらダメージ）
+                    if (this.skillTimer % 5 === 0 && otherPlayer.invincible <= 0) {
+                        if (this.x < otherPlayer.x + otherPlayer.width && this.x + this.width > otherPlayer.x &&
+                            this.y < otherPlayer.y + otherPlayer.height && this.y + this.height > otherPlayer.y) {
+                            otherPlayer.takeDamage(4, this.facing, -1, 5);
+                        }
+                    }
+
+                    // キャラのスキル中物理挙動
+                    if (this.charData.id === 'ninja') {
+                        // 慣性を無視して一定速度で飛ぶ
+                        this.vx = this.facing * 16;
+                        this.vy = -10;
+                        createExplosion(this.x + this.width/2, this.y + this.height, this.color, 1);
+                    } else if (this.charData.id === 'tank') {
+                        // 最初の勢いで飛び、徐々に重力がかかる
+                        if (this.skillTimer < 10) this.vy += GRAVITY * 0.8;
+                        createExplosion(this.x + this.width/2, this.y + this.height, '#fff', 1);
+                    } else if (this.charData.id === 'hacker') {
+                        // ホバリング
+                        this.vy = -2;
+                        this.vx = this.facing * 8;
+                        createExplosion(this.x + this.width/2, this.y + this.height, this.color, 1);
+                    }
+
+                    if (this.skillTimer <= 0) {
+                        this.isSkilling = false;
+                        this.attackCooldown = 15; // スキル後の隙（しりもち落下）
+                    }
+
+                // --- 通常操作 ---
                 } else {
-                    // --- 入力処理（通常時） ---
-                    
                     // 左右移動
                     if (keys[this.controls.left]) {
                         this.vx -= 1.5;
@@ -330,107 +468,94 @@
                         this.facing = 1;
                     }
 
-                    // 摩擦の適用（入力がない時や逆向きの時）
-                    if (this.onGround) {
-                        this.vx *= FRICTION;
-                    } else {
-                        this.vx *= AIR_FRICTION;
+                    // 摩擦
+                    if (this.onGround) this.vx *= FRICTION;
+                    else this.vx *= AIR_FRICTION;
+
+                    // 移動速度制限
+                    if (Math.abs(this.vx) > this.charData.moveSpeed) {
+                        this.vx = Math.sign(this.vx) * this.charData.moveSpeed;
                     }
 
-                    // 速度制限 (自力移動の最大速度)
-                    // ※ただし、ノックバックで吹っ飛んでいる時は制限しない
-                    if (Math.abs(this.vx) > MOVE_SPEED && this.hitstun <= 0) {
-                        this.vx = Math.sign(this.vx) * MOVE_SPEED;
-                    }
-
-                    // ジャンプ (押した瞬間のみ)
+                    // ジャンプ
                     if (keys[this.controls.jump] && !prevKeys[this.controls.jump]) {
-                        if (this.jumpCount < this.maxJumps) {
-                            this.vy = -JUMP_FORCE;
+                        if (this.jumpCount < this.charData.maxJumps) {
+                            this.vy = -this.charData.jumpForce;
                             this.jumpCount++;
                             this.onGround = false;
+                            createExplosion(this.x + this.width/2, this.y + this.height, '#fff', 5);
                         }
                     }
 
-                    // 攻撃 (地上・空中共通のスマッシュ攻撃)
+                    // スキル（復帰技）発動
+                    if (keys[this.controls.skill] && !prevKeys[this.controls.skill] && !this.skillUsedInAir && this.attackCooldown <= 0 && !this.isAttacking) {
+                        this.useSkill();
+                    }
+
+                    // 攻撃（スマッシュ）
                     if (keys[this.controls.attack] && !prevKeys[this.controls.attack] && this.attackCooldown <= 0 && !this.isAttacking) {
                         this.isAttacking = true;
-                        this.attackTimer = this.attackDuration;
-                        this.attackCooldown = 30; // 攻撃後の隙
+                        this.attackTimer = this.charData.attackDuration;
+                        this.attackCooldown = this.charData.attackCooldown;
                     }
+
+                    this.vy += GRAVITY;
                 }
 
-                // --- 攻撃の処理と当たり判定 ---
-                if (this.isAttacking) {
+                // --- 攻撃の当たり判定 ---
+                if (this.isAttacking && !this.isSkilling && this.hitstun <= 0) {
                     this.attackTimer--;
                     
-                    // 攻撃のヒットボックス (向いている方向の前方に出現)
+                    // キャラによってヒットボックスの大きさを変えることも可能（今回は固定ベースで少し調整）
+                    const hitBoxWidth = this.charData.id === 'tank' ? 80 : 60;
+                    
                     const hitBox = {
-                        x: this.facing === 1 ? this.x + this.width : this.x - 60,
-                        y: this.y + 10,
-                        width: 60,
-                        height: 40
+                        x: this.facing === 1 ? this.x + this.width : this.x - hitBoxWidth,
+                        y: this.y + 5,
+                        width: hitBoxWidth,
+                        height: 50
                     };
 
-                    // 相手への当たり判定 (無敵じゃない時)
-                    if (this.attackTimer > this.attackDuration - 5) { // 発生の数フレームだけ判定を出す
+                    // 攻撃の発生フレームのみ判定
+                    if (this.attackTimer > this.charData.attackDuration - 5) {
                         if (otherPlayer.invincible <= 0 &&
-                            hitBox.x < otherPlayer.x + otherPlayer.width &&
-                            hitBox.x + hitBox.width > otherPlayer.x &&
-                            hitBox.y < otherPlayer.y + otherPlayer.height &&
-                            hitBox.y + hitBox.height > otherPlayer.y) {
+                            hitBox.x < otherPlayer.x + otherPlayer.width && hitBox.x + hitBox.width > otherPlayer.x &&
+                            hitBox.y < otherPlayer.y + otherPlayer.height && hitBox.y + hitBox.height > otherPlayer.y) {
                             
                             // ヒット！
-                            // ベクトル計算：相手を斜め上に吹き飛ばす
-                            const dirX = this.facing;
-                            const dirY = -0.8; 
+                            otherPlayer.takeDamage(this.charData.attackDamage, this.facing, -0.8, this.charData.baseKnockback);
                             
-                            otherPlayer.takeDamage(12, dirX, dirY);
-                            
-                            // 攻撃を当てた側はヒットストップ（少し硬直）を入れて重さを出す
-                            this.vx = 0;
-                            this.vy = 0;
+                            // ヒットストップ
+                            this.vx = 0; this.vy = 0;
                         }
                     }
 
-                    if (this.attackTimer <= 0) {
-                        this.isAttacking = false;
-                    }
+                    if (this.attackTimer <= 0) this.isAttacking = false;
                 }
 
-                // --- 物理演算 ---
-                this.vy += GRAVITY;
+                // 落下速度制限
                 if (this.vy > MAX_FALL_SPEED) this.vy = MAX_FALL_SPEED;
 
-                // 次の位置
+                // --- 地形判定 ---
                 let nextX = this.x + this.vx;
                 let nextY = this.y + this.vy;
-
                 this.onGround = false;
-
-                // --- 地形との衝突判定 ---
-                // 下方向のすり抜け入力（Sキーなど）
                 const droppingDown = keys[this.controls.down];
 
                 for (const plat of platforms) {
-                    // 足場の上面との衝突のみ判定（下から上へはすり抜ける）
-                    // 前フレームでは足場より上にいて、次フレームで足場にめり込む場合
                     if (this.vy > 0 && 
                         this.y + this.height <= plat.y && 
                         nextY + this.height >= plat.y &&
-                        nextX + this.width > plat.x && 
-                        nextX < plat.x + plat.width) {
+                        nextX + this.width > plat.x && nextX < plat.x + plat.width) {
                         
-                        // すり抜け床で下キーを押している場合は無視
-                        if (plat.type === 'pass-through' && droppingDown) {
-                            continue;
-                        }
+                        if (plat.type === 'pass-through' && droppingDown) continue;
 
                         // 着地
                         nextY = plat.y - this.height;
                         this.vy = 0;
                         this.onGround = true;
-                        this.jumpCount = 0; // ジャンプ回数リセット
+                        this.jumpCount = 0;
+                        this.skillUsedInAir = false; // スキル使用権の回復
                     }
                 }
 
@@ -438,50 +563,40 @@
                 this.y = nextY;
 
                 // --- 場外（バースト）判定 ---
-                // 画面外の余裕（Blast zone）
-                const margin = 100;
+                const margin = 150; // 画面外の余裕を少し広くした
                 if (this.x < -margin || this.x > GAME_WIDTH + margin || 
                     this.y > GAME_HEIGHT + margin || this.y < -margin * 2) {
                     
-                    // バーストエフェクト
-                    createExplosion(Math.max(0, Math.min(this.x, GAME_WIDTH)), Math.max(0, Math.min(this.y, GAME_HEIGHT)), this.color, 50);
+                    // バーストエフェクト（キャラ色で大きく）
+                    createExplosion(Math.max(0, Math.min(this.x, GAME_WIDTH)), Math.max(0, Math.min(this.y, GAME_HEIGHT)), this.color, 100);
 
                     this.stocks--;
                     if (this.stocks > 0) {
                         this.respawn();
                     } else {
-                        // ゲームオーバー処理
-                        this.y = 9999; // 画面外に隠す
-                        this.vx = 0;
-                        this.vy = 0;
-                        endGame(otherPlayer.id);
+                        this.y = 9999; this.vx = 0; this.vy = 0;
+                        endGame(otherPlayer.id, otherPlayer.color);
                     }
                 }
             }
 
             draw(ctx) {
-                // 残機0の場合は描画しない
                 if (this.stocks <= 0) return;
+                if (this.invincible > 0 && Math.floor(Date.now() / 100) % 2 === 0) return;
 
-                // 点滅処理 (無敵時間)
-                if (this.invincible > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
-                    return; // 描画スキップ
-                }
-
-                // 軌跡（残像）の描画
-                if (Math.abs(this.vx) > 5 || Math.abs(this.vy) > 5) {
+                // 軌跡
+                if (Math.abs(this.vx) > 5 || Math.abs(this.vy) > 5 || this.isSkilling) {
                     this.trail.forEach((pos, index) => {
                         ctx.fillStyle = this.color;
-                        ctx.globalAlpha = (index / this.trail.length) * 0.3;
+                        ctx.globalAlpha = (index / this.trail.length) * 0.4;
                         ctx.fillRect(pos.x, pos.y, this.width, this.height);
                     });
                     ctx.globalAlpha = 1.0;
                 }
 
-                // 本体描画 (ネオン風)
                 ctx.shadowBlur = 15;
                 ctx.shadowColor = this.color;
-                ctx.fillStyle = '#111'; // 中身は暗め
+                ctx.fillStyle = '#111';
                 ctx.strokeStyle = this.color;
                 ctx.lineWidth = 3;
 
@@ -490,25 +605,22 @@
                 ctx.fill();
                 ctx.stroke();
                 
-                // 目の描画（向きを示す）
+                // 目
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = this.color;
                 const eyeX = this.facing === 1 ? this.x + 25 : this.x + 5;
                 ctx.fillRect(eyeX, this.y + 10, 10, 10);
 
-                // 攻撃のエフェクト描画
-                if (this.isAttacking) {
+                // 攻撃エフェクト
+                if (this.isAttacking && !this.isSkilling) {
+                    const hitBoxWidth = this.charData.id === 'tank' ? 80 : 60;
                     const hitBox = {
-                        x: this.facing === 1 ? this.x + this.width : this.x - 60,
-                        y: this.y + 10,
-                        width: 60,
-                        height: 40
+                        x: this.facing === 1 ? this.x + this.width : this.x - hitBoxWidth,
+                        y: this.y + 5, width: hitBoxWidth, height: 50
                     };
                     
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = '#fff';
-                    // 攻撃の軌跡のような形
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.attackTimer / this.charData.attackDuration})`;
+                    ctx.shadowBlur = 20; ctx.shadowColor = '#fff';
                     ctx.beginPath();
                     if (this.facing === 1) {
                         ctx.moveTo(this.x + this.width, this.y + 30);
@@ -523,7 +635,14 @@
                     ctx.shadowBlur = 0;
                 }
 
-                // ダメージ受けてる時の赤いオーバーレイ
+                // スキルエフェクト
+                if (this.isSkilling) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10);
+                }
+
+                // ダメージ赤枠
                 if (this.hitstun > 0) {
                     ctx.fillStyle = `rgba(255, 0, 0, ${Math.min(0.8, this.hitstun / 20)})`;
                     ctx.fillRect(this.x, this.y, this.width, this.height);
@@ -537,20 +656,29 @@
         let animationId;
 
         function initGame() {
-            // P1: WASD + F
-            player1 = new Player(1, 400, 100, '#00ffff', {
-                left: 'KeyA', right: 'KeyD', jump: 'KeyW', down: 'KeyS', attack: 'KeyF'
+            // キャラクターデータを渡して生成
+            player1 = new Player(1, 400, 100, selectedP1, {
+                left: 'KeyA', right: 'KeyD', jump: 'KeyW', down: 'KeyS', attack: 'KeyF', skill: 'KeyG'
             });
-            // P2: 矢印 + L
-            player2 = new Player(2, 880, 100, '#ff00ff', {
-                left: 'ArrowLeft', right: 'ArrowRight', jump: 'ArrowUp', down: 'ArrowDown', attack: 'KeyL'
+            player2 = new Player(2, 880, 100, selectedP2, {
+                left: 'ArrowLeft', right: 'ArrowRight', jump: 'ArrowUp', down: 'ArrowDown', attack: 'KeyL', skill: 'KeyK'
             });
+
+            // UIの初期設定（名前と色）
+            p1NameUi.innerText = player1.charData.name;
+            p1NameUi.style.color = player1.color;
+            p1DamageContainer.style.color = player1.color;
+            p1DamageContainer.style.textShadow = `0 0 10px ${player1.color}`;
+
+            p2NameUi.innerText = player2.charData.name;
+            p2NameUi.style.color = player2.color;
+            p2DamageContainer.style.color = player2.color;
+            p2DamageContainer.style.textShadow = `0 0 10px ${player2.color}`;
 
             particles = [];
             gameActive = true;
             updateUI();
             
-            // 状態リセット
             Object.keys(keys).forEach(k => keys[k] = false);
             Object.keys(prevKeys).forEach(k => prevKeys[k] = false);
 
@@ -562,115 +690,85 @@
             p1DamageEl.innerText = Math.floor(player1.damage);
             p2DamageEl.innerText = Math.floor(player2.damage);
 
-            // ストックアイコンの描画
             p1StocksEl.innerHTML = '';
-            for(let i=0; i<player1.stocks; i++) {
-                p1StocksEl.innerHTML += `<div class="stock-icon bg-[#00ffff]"></div>`;
-            }
+            for(let i=0; i<player1.stocks; i++) p1StocksEl.innerHTML += `<div class="stock-icon" style="background:${player1.color}; box-shadow:0 0 10px ${player1.color}"></div>`;
+            
             p2StocksEl.innerHTML = '';
-            for(let i=0; i<player2.stocks; i++) {
-                p2StocksEl.innerHTML += `<div class="stock-icon bg-[#ff00ff]"></div>`;
-            }
+            for(let i=0; i<player2.stocks; i++) p2StocksEl.innerHTML += `<div class="stock-icon" style="background:${player2.color}; box-shadow:0 0 10px ${player2.color}"></div>`;
         }
 
-        function endGame(winnerId) {
+        function endGame(winnerId, color) {
             gameActive = false;
             uiLayer.classList.add('hidden');
             resultScreen.classList.remove('hidden');
             
-            // 描画更新を待ってからフェードイン
-            setTimeout(() => {
-                resultScreen.classList.remove('opacity-0');
-            }, 50);
+            setTimeout(() => { resultScreen.classList.remove('opacity-0'); }, 50);
 
             winnerText.innerText = `PLAYER ${winnerId} WINS!`;
-            winnerText.className = `text-6xl sm:text-8xl font-black mb-8 tracking-widest italic uppercase ${winnerId === 1 ? 'neon-text-p1' : 'neon-text-p2'}`;
+            winnerText.style.color = color;
+            winnerText.style.textShadow = `0 0 10px ${color}, 0 0 20px ${color}`;
         }
 
-        // --- 描画と更新のループ ---
+        // --- 描画ループ ---
         function drawBackground() {
-            // 背景クリア
             ctx.fillStyle = '#050510';
             ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-            // サイバーパンク風グリッド
             ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
             ctx.lineWidth = 1;
             const gridSize = 50;
-            
-            // 少しスクロールさせる演出（オプション）
             const offset = (Date.now() / 50) % gridSize;
 
             ctx.beginPath();
-            for (let x = 0; x < GAME_WIDTH; x += gridSize) {
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, GAME_HEIGHT);
-            }
-            for (let y = 0; y < GAME_HEIGHT; y += gridSize) {
-                ctx.moveTo(0, y + offset);
-                ctx.lineTo(GAME_WIDTH, y + offset);
-            }
+            for (let x = 0; x < GAME_WIDTH; x += gridSize) { ctx.moveTo(x, 0); ctx.lineTo(x, GAME_HEIGHT); }
+            for (let y = 0; y < GAME_HEIGHT; y += gridSize) { ctx.moveTo(0, y + offset); ctx.lineTo(GAME_WIDTH, y + offset); }
             ctx.stroke();
         }
 
         function drawPlatforms() {
             platforms.forEach(plat => {
-                // ネオンエフェクト
                 ctx.shadowBlur = 10;
                 ctx.shadowColor = plat.type === 'solid' ? '#fff' : '#0ff';
-                
-                // ベースの色
                 ctx.fillStyle = plat.type === 'solid' ? '#222' : 'rgba(0, 50, 50, 0.5)';
                 ctx.strokeStyle = plat.type === 'solid' ? '#fff' : '#0ff';
                 ctx.lineWidth = 2;
 
                 ctx.beginPath();
                 ctx.roundRect(plat.x, plat.y, plat.width, plat.height, 4);
-                ctx.fill();
-                ctx.stroke();
+                ctx.fill(); ctx.stroke();
 
-                // 上部のハイライトライン
                 ctx.fillStyle = plat.type === 'solid' ? '#fff' : '#0ff';
                 ctx.fillRect(plat.x + 2, plat.y, plat.width - 4, 4);
-                
-                ctx.shadowBlur = 0; // リセット
+                ctx.shadowBlur = 0;
             });
         }
 
         function gameLoop() {
             if (!gameActive) return;
 
-            // --- 更新 ---
             player1.update(player2);
             player2.update(player1);
 
             particles.forEach(p => p.update());
             particles = particles.filter(p => p.life > 0);
 
-            // prevKeys の更新
             Object.assign(prevKeys, keys);
 
-            // --- 描画 ---
-            // キャンバス全体を画面サイズに合わせつつ、内部の座標系はGAME_WIDTH/HEIGHTに固定
             ctx.save();
-            // 画面中央に配置
             ctx.translate((canvas.width - GAME_WIDTH * scale) / 2, (canvas.height - GAME_HEIGHT * scale) / 2);
             ctx.scale(scale, scale);
 
             drawBackground();
             drawPlatforms();
-            
             particles.forEach(p => p.draw(ctx));
-
             player1.draw(ctx);
             player2.draw(ctx);
 
             ctx.restore();
-
             animationId = requestAnimationFrame(gameLoop);
         }
 
-        // --- イベントリスナー ---
+        // --- イベント ---
         startBtn.addEventListener('click', () => {
             startScreen.classList.add('opacity-0');
             setTimeout(() => {
@@ -684,12 +782,11 @@
             resultScreen.classList.add('opacity-0');
             setTimeout(() => {
                 resultScreen.classList.add('hidden');
-                uiLayer.classList.remove('hidden');
-                initGame();
+                startScreen.classList.remove('hidden');
+                setTimeout(() => { startScreen.classList.remove('opacity-0'); }, 50);
             }, 500);
         });
 
-        // 最初の描画だけしておく（スタート画面の背景用）
         drawBackground();
         drawPlatforms();
 
